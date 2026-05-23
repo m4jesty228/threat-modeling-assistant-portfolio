@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Threat Modeling Assistant — Portfolio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root[data-theme="light"] {
+    --bg: #f5f4f0; --bg2: #eceae4; --surface: #ffffff; --border: #d8d5ce;
+    --text: #1a1916; --text2: #5c5a54; --accent: #1a56db; --accent2: #0f3d9e;
+    --tag-bg: #e8edf8; --tag-text: #1a3d8c;
+    --badge-stride: #dcfce7; --badge-stride-t: #166534;
+    --badge-linddun: #fef3c7; --badge-linddun-t: #92400e;
+    --badge-owasp: #fce8e8; --badge-owasp-t: #991b1b;
+    --code-bg: #f0ede7;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.04);
+    --shadow-lg: 0 4px 24px rgba(0,0,0,0.10);
+    --btn-toggle: #1a1916; --btn-toggle-t: #f5f4f0;
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f0f0e; --bg2: #161614; --surface: #1e1d1b; --border: #2d2c29;
+    --text: #e8e6e0; --text2: #8a8880; --accent: #4d82f0; --accent2: #6b96f3;
+    --tag-bg: #1a2540; --tag-text: #7aa2f5;
+    --badge-stride: #1a3a24; --badge-stride-t: #6ee7a0;
+    --badge-linddun: #3a2e10; --badge-linddun-t: #fbbf24;
+    --badge-owasp: #3a1616; --badge-owasp-t: #f87171;
+    --code-bg: #252420;
+    --shadow: 0 1px 3px rgba(0,0,0,0.30), 0 4px 16px rgba(0,0,0,0.20);
+    --shadow-lg: 0 4px 24px rgba(0,0,0,0.40);
+    --btn-toggle: #e8e6e0; --btn-toggle-t: #0f0f0e;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'IBM Plex Sans', sans-serif; background: var(--bg); color: var(--text); transition: background 0.3s, color 0.3s; line-height: 1.6; }
+
+  /* NAV */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--bg); border-bottom: 1px solid var(--border);
+    padding: 0 2rem; display: flex; align-items: center; justify-content: space-between;
+    height: 56px; transition: background 0.3s, border-color 0.3s;
+  }
+  .nav-logo { font-family: 'IBM Plex Mono', monospace; font-size: 0.85rem; font-weight: 600; color: var(--text); text-decoration: none; display: flex; align-items: center; gap: 8px; }
+  .nav-logo span { color: var(--accent); }
+  .nav-links { display: flex; align-items: center; gap: 1.5rem; }
+  .nav-links a { font-size: 0.82rem; color: var(--text2); text-decoration: none; transition: color 0.2s; font-weight: 500; }
+  .nav-links a:hover { color: var(--text); }
+  .toggle-btn {
+    background: var(--btn-toggle); color: var(--btn-toggle-t); border: none;
+    border-radius: 6px; padding: 5px 12px; font-size: 0.78rem;
+    font-family: 'IBM Plex Mono', monospace; font-weight: 500; cursor: pointer; transition: all 0.2s;
+  }
+  .toggle-btn:hover { opacity: 0.8; }
+
+  /* LAYOUT */
+  .container { max-width: 860px; margin: 0 auto; padding: 0 2rem; }
+
+  /* HERO */
+  .hero { padding: 5rem 0 3.5rem; border-bottom: 1px solid var(--border); }
+  .hero-eyebrow {
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem; color: var(--accent);
+    font-weight: 500; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1.2rem;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .hero-eyebrow::before { content: ''; display: inline-block; width: 20px; height: 2px; background: var(--accent); border-radius: 2px; }
+  .hero h1 { font-size: clamp(1.9rem, 4vw, 2.8rem); font-weight: 600; line-height: 1.2; letter-spacing: -0.02em; margin-bottom: 1.2rem; }
+  .hero h1 em { font-style: normal; color: var(--accent); }
+  .hero-desc { font-size: 1.05rem; color: var(--text2); max-width: 600px; margin-bottom: 2rem; line-height: 1.7; }
+  .hero-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2rem; }
+  .badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 4px; font-size: 0.72rem; font-family: 'IBM Plex Mono', monospace; font-weight: 500; letter-spacing: 0.02em; }
+  .badge-stride { background: var(--badge-stride); color: var(--badge-stride-t); }
+  .badge-linddun { background: var(--badge-linddun); color: var(--badge-linddun-t); }
+  .badge-owasp { background: var(--badge-owasp); color: var(--badge-owasp-t); }
+  .badge-neutral { background: var(--bg2); color: var(--text2); }
+  .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; border-radius: 6px; font-size: 0.85rem; font-weight: 500; text-decoration: none; transition: all 0.2s; font-family: 'IBM Plex Sans', sans-serif; }
+  .btn-primary { background: var(--accent); color: #fff; border: 1px solid var(--accent); }
+  .btn-primary:hover { background: var(--accent2); border-color: var(--accent2); }
+  .btn-secondary { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--text2); }
+
+  /* SECTIONS */
+  section { padding: 3.5rem 0; border-bottom: 1px solid var(--border); }
+  section:last-of-type { border-bottom: none; }
+  /* offset for sticky nav */
+  section[id] { scroll-margin-top: 64px; }
+  .hero[id]   { scroll-margin-top: 64px; }
+  .section-label { font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; color: var(--text2); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 1.5rem; font-weight: 500; }
+  h2 { font-size: 1.4rem; font-weight: 600; margin-bottom: 1rem; letter-spacing: -0.01em; }
+  p { color: var(--text2); line-height: 1.75; margin-bottom: 0.8rem; }
+  p:last-child { margin-bottom: 0; }
+
+  /* CARDS */
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin-top: 1.5rem; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.4rem; box-shadow: var(--shadow); transition: box-shadow 0.2s, border-color 0.2s; }
+  .card:hover { box-shadow: var(--shadow-lg); border-color: var(--accent); }
+  .card-icon { font-size: 1.3rem; margin-bottom: 0.8rem; }
+  .card h3 { font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; }
+  .card p { font-size: 0.83rem; color: var(--text2); line-height: 1.6; }
+
+  /* ARCH */
+  .arch-diagram { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; margin-top: 1.5rem; box-shadow: var(--shadow); }
+  .arch-layers { display: flex; flex-direction: column; gap: 0.8rem; }
+  .arch-layer { border: 1px solid var(--border); border-radius: 6px; padding: 1rem 1.2rem; background: var(--bg2); }
+  .arch-layer-title { font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem; }
+  .arch-items { display: flex; flex-wrap: wrap; gap: 6px; }
+  .arch-item { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 3px 10px; font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; color: var(--text2); }
+  .arch-arrow { text-align: center; color: var(--text2); font-size: 0.9rem; line-height: 1; padding: 2px 0; }
+
+  /* WORKFLOW */
+  .workflow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin-top: 1.5rem; background: var(--border); border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+  .wf-step { background: var(--surface); padding: 1.4rem 1.2rem; }
+  .wf-num { font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; color: var(--accent); font-weight: 600; margin-bottom: 0.5rem; }
+  .wf-step h3 { font-size: 0.88rem; font-weight: 600; margin-bottom: 0.4rem; }
+  .wf-step p { font-size: 0.8rem; color: var(--text2); line-height: 1.5; }
+
+  /* TABLE */
+  .table-wrap { overflow-x: auto; margin-top: 1.5rem; border-radius: 8px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; background: var(--surface); }
+  th { padding: 10px 14px; font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; font-weight: 600; color: var(--text2); text-align: left; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--border); background: var(--bg2); }
+  td { padding: 9px 14px; font-size: 0.82rem; color: var(--text); border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--bg2); }
+  .check { color: #16a34a; }
+  .cross { color: var(--text2); opacity: 0.4; }
+
+  /* CODE */
+  .code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1.2rem 1.4rem; margin-top: 1.5rem; font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; color: var(--text); line-height: 1.8; overflow-x: auto; }
+  .code-block .comment { color: var(--text2); }
+  .code-block .cmd { color: var(--accent); }
+
+  /* TEAM */
+  .team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 1rem; margin-top: 1.5rem; }
+  .team-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.2rem; box-shadow: var(--shadow); }
+  .team-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--tag-bg); color: var(--accent); display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 0.8rem; margin-bottom: 0.8rem; }
+  .team-card h3 { font-size: 0.85rem; font-weight: 600; margin-bottom: 0.2rem; }
+  .team-card p { font-size: 0.75rem; color: var(--text2); }
+
+  /* TAGS */
+  .tag-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 1rem; }
+  .tag { background: var(--tag-bg); color: var(--tag-text); padding: 3px 10px; border-radius: 4px; font-size: 0.75rem; font-family: 'IBM Plex Mono', monospace; font-weight: 500; }
+
+  /* FOOTER */
+  footer { padding: 2rem 0; text-align: center; font-size: 0.78rem; color: var(--text2); font-family: 'IBM Plex Mono', monospace; }
+  footer a { color: var(--accent); text-decoration: none; }
+
+  /* RESPONSIVE */
+  @media (max-width: 640px) {
+    .workflow { grid-template-columns: 1fr; }
+    .nav-links a { display: none; }
+    .hero { padding: 3rem 0 2.5rem; }
+  }
+
+  /* FADE IN */
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  .hero, section { animation: fadeUp 0.5s ease both; }
+  section:nth-of-type(2) { animation-delay: 0.05s; }
+  section:nth-of-type(3) { animation-delay: 0.10s; }
+  section:nth-of-type(4) { animation-delay: 0.15s; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="#overview"><span>TMA</span> / threat-modeling-assistant</a>
+  <div class="nav-links">
+    <a href="#overview">Vue d'ensemble</a>
+    <a href="#fonctionnalites">Fonctionnalités</a>
+    <a href="#architecture">Architecture</a>
+    <a href="#equipe">Équipe</a>
+    <button class="toggle-btn" onclick="toggleTheme()" id="themeBtn">☾ Sombre</button>
+  </div>
+</nav>
+
+<div class="container">
+
+  <!-- HERO / VUE D'ENSEMBLE -->
+  <div class="hero" id="overview">
+    <div class="hero-eyebrow">Projet académique · ENSA Marrakech · v1.0.0</div>
+    <h1>Threat Modeling<br /><em>Assistant</em></h1>
+    <p class="hero-desc">
+      Une plateforme open-source qui automatise la génération de modèles de menaces STRIDE et LINDDUN
+      pour les applications Android — en combinant l'analyse statique d'APK, l'élicitation de contexte
+      assistée par LLM et la correspondance avec les contrôles OWASP MASVS v2.
+    </p>
+    <div class="hero-badges">
+      <span class="badge badge-stride">STRIDE</span>
+      <span class="badge badge-linddun">LINDDUN</span>
+      <span class="badge badge-owasp">OWASP MASVS v2</span>
+      <span class="badge badge-neutral">FastAPI · React 18</span>
+      <span class="badge badge-neutral">Docker</span>
+      <span class="badge badge-neutral">Licence MIT</span>
+    </div>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="https://github.com/Eti-Hack/Threat_Modeling_Assistant" target="_blank">
+        ↗ Voir sur GitHub
+      </a>
+      <a class="btn btn-secondary" href="https://github.com/Eti-Hack/Threat_Modeling_Assistant/blob/main/README.md" target="_blank">
+        Documentation
+      </a>
+    </div>
+  </div>
+
+  <!-- MOTIVATION -->
+  <section>
+    <div class="section-label">Motivation</div>
+    <h2>Le problème</h2>
+    <p>
+      La modélisation des menaces est reconnue par l'OWASP, le NIST SP 800-154 et l'ISO/IEC 27034
+      comme une activité fondamentale du développement sécurisé — pourtant son adoption dans les équipes
+      mobiles reste limitée. Produire un modèle manuellement prend 2 à 5 jours, nécessite une expertise
+      pointue, et les outils existants ne proposent aucune analyse spécifique à Android.
+    </p>
+    <p>
+      Pour les applications Android, la surface d'attaque est encore plus complexe du fait du modèle de
+      composants (activités, services, broadcast receivers, content providers) et de la nécessité de
+      mapper chaque menace aux contrôles OWASP MASVS v2 répartis en 7 familles.
+    </p>
+    <p>
+      <strong>TMA comble ce manque</strong> en combinant l'analyse statique d'APK via Androguard,
+      l'élicitation de contexte par LLM et la génération structurée STRIDE / LINDDUN — le seul outil
+      open-source à réunir simultanément ces quatre capacités.
+    </p>
+  </section>
+
+  <!-- FONCTIONNALITES -->
+  <section id="fonctionnalites">
+    <div class="section-label">Fonctionnalités</div>
+    <h2>Ce que fait TMA</h2>
+    <div class="cards">
+      <div class="card">
+        <div class="card-icon">🔍</div>
+        <h3>Analyse statique d'APK</h3>
+        <p>Extrait les permissions, les composants exportés et les endpoints API depuis le binaire APK via Androguard — sans code source requis.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🧠</div>
+        <h3>Élicitation de contexte par LLM</h3>
+        <p>Génère 6 questions ciblées à partir du contexte extrait avant de synthétiser le modèle de menaces. Compatible Anthropic, OpenAI, Ollama ou mode mock.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">⚔️</div>
+        <h3>STRIDE & LINDDUN</h3>
+        <p>Supporte les deux principaux frameworks de threat modeling — STRIDE pour la sécurité et LINDDUN pour la vie privée — sélectionnables par session.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🛡️</div>
+        <h3>Mapping OWASP MASVS v2</h3>
+        <p>Chaque menace est automatiquement mappée aux contrôles MASVS v2 sur les 7 catégories : STORAGE, CRYPTO, AUTH, NETWORK, PLATFORM, CODE, RESILIENCE.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🌐</div>
+        <h3>Bilingue FR / EN</h3>
+        <p>Interface complète et résultats générés en français et en anglais. La préférence de langue est persistante entre les sessions.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">📦</div>
+        <h3>Déploiement en une commande</h3>
+        <p>Entièrement conteneurisé avec Docker Compose. Le mode mock ne nécessite aucune clé API — zéro configuration pour l'exploration et la CI.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ARCHITECTURE -->
+  <section id="architecture">
+    <div class="section-label">Architecture</div>
+    <h2>Comment ça fonctionne</h2>
+    <p>TMA suit une architecture client-serveur à trois niveaux. nginx route les requêtes <code>/api/</code> vers le backend FastAPI tout en servant le SPA React à la racine.</p>
+
+    <div class="arch-diagram">
+      <div class="arch-layers">
+        <div class="arch-layer">
+          <div class="arch-layer-title">Frontend — React 18 + Vite · port 3000</div>
+          <div class="arch-items">
+            <span class="arch-item">UploadZone</span>
+            <span class="arch-item">QuestionForm</span>
+            <span class="arch-item">ThreatModelView</span>
+            <span class="arch-item">RiskRegister</span>
+            <span class="arch-item">MitigationPanel</span>
+            <span class="arch-item">i18n (FR/EN)</span>
+          </div>
+        </div>
+        <div class="arch-arrow">↕ HTTP/JSON · proxy inverse nginx</div>
+        <div class="arch-layer">
+          <div class="arch-layer-title">Backend — FastAPI · Python 3.12 · port 8000</div>
+          <div class="arch-items">
+            <span class="arch-item">POST /api/analyze</span>
+            <span class="arch-item">POST /session/{id}/generate</span>
+            <span class="arch-item">GET /api/export/{id}</span>
+            <span class="arch-item">apk_extractor</span>
+            <span class="arch-item">threat_modeler</span>
+            <span class="arch-item">Session store (TTL 1h)</span>
+          </div>
+        </div>
+        <div class="arch-arrow">↕ LLMProvider ABC</div>
+        <div class="arch-layer">
+          <div class="arch-layer-title">Couche d'abstraction LLM</div>
+          <div class="arch-items">
+            <span class="arch-item">mock (défaut)</span>
+            <span class="arch-item">claude_code</span>
+            <span class="arch-item">anthropic</span>
+            <span class="arch-item">openai</span>
+            <span class="arch-item">ollama</span>
+            <span class="arch-item">openai_compatible</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h2 style="margin-top: 2rem;">Workflow en 3 étapes</h2>
+    <div class="workflow">
+      <div class="wf-step">
+        <div class="wf-num">01 / UPLOAD</div>
+        <h3>APK + Description</h3>
+        <p>Déposez un APK (jusqu'à 100 Mo) et fournissez une description textuelle de l'application.</p>
+      </div>
+      <div class="wf-step">
+        <div class="wf-num">02 / QUESTIONS</div>
+        <h3>Élicitation de contexte</h3>
+        <p>Répondez aux 6 questions générées par le LLM. Sélectionnez le framework STRIDE ou LINDDUN avant de lancer la génération.</p>
+      </div>
+      <div class="wf-step">
+        <div class="wf-num">03 / RÉSULTATS</div>
+        <h3>Modèle de menaces</h3>
+        <p>Onglets Menaces · Registre des risques · Mitigations MASVS. Export du modèle complet en JSON.</p>
+      </div>
+    </div>
+
+    <h2 style="margin-top: 2rem;">Démarrage rapide</h2>
+    <div class="code-block">
+<span class="comment"># Cloner et lancer — aucune clé API requise (mode mock)</span>
+<span class="cmd">git clone</span> https://github.com/Eti-Hack/Threat_Modeling_Assistant.git
+<span class="cmd">cd</span> Threat_Modeling_Assistant
+<span class="cmd">cp</span> .env.example .env
+<span class="cmd">docker compose up --build</span>
+<span class="comment"># Ouvrir http://localhost:3000</span>
+
+<span class="comment"># Pour utiliser un vrai LLM :</span>
+<span class="cmd">echo</span> "LLM_PROVIDER=anthropic" >> .env
+<span class="cmd">echo</span> "ANTHROPIC_API_KEY=sk-ant-..." >> .env
+<span class="cmd">docker compose restart</span> backend
+    </div>
+  </section>
+
+  <!-- COMPARAISON -->
+  <section>
+    <div class="section-label">Comparaison</div>
+    <h2>vs. les outils existants</h2>
+    <p>TMA est le seul outil open-source combinant simultanément ces quatre capacités.</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Fonctionnalité</th>
+            <th>TMA</th>
+            <th>MS TMT</th>
+            <th>Threat Dragon</th>
+            <th>IriusRisk</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Analyse binaire APK</td><td class="check">✓</td><td class="cross">✗</td><td class="cross">✗</td><td class="cross">✗</td></tr>
+          <tr><td>Support STRIDE</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td></tr>
+          <tr><td>Support LINDDUN</td><td class="check">✓</td><td class="cross">✗</td><td class="cross">✗</td><td class="cross">Partiel</td></tr>
+          <tr><td>Mapping OWASP MASVS v2</td><td class="check">✓</td><td class="cross">✗</td><td class="cross">✗</td><td class="check">✓</td></tr>
+          <tr><td>Génération assistée par LLM</td><td class="check">✓</td><td class="cross">✗</td><td class="cross">✗</td><td class="cross">✗</td></tr>
+          <tr><td>Mode entièrement hors-ligne</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="cross">✗</td></tr>
+          <tr><td>Open-source</td><td class="check">✓</td><td class="cross">✗</td><td class="check">✓</td><td class="cross">✗</td></tr>
+          <tr><td>Interface bilingue FR/EN</td><td class="check">✓</td><td class="cross">✗</td><td class="cross">✗</td><td class="cross">✗</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- STACK -->
+  <section>
+    <div class="section-label">Stack technique</div>
+    <h2>Technologies utilisées</h2>
+    <div class="tag-list">
+      <span class="tag">Python 3.12</span>
+      <span class="tag">FastAPI 0.111</span>
+      <span class="tag">Androguard 4.1</span>
+      <span class="tag">Pydantic v2</span>
+      <span class="tag">React 18</span>
+      <span class="tag">Vite 5</span>
+      <span class="tag">TailwindCSS 3.4</span>
+      <span class="tag">Framer Motion 11</span>
+      <span class="tag">Docker Compose</span>
+      <span class="tag">nginx</span>
+      <span class="tag">Ollama</span>
+      <span class="tag">Claude / OpenAI API</span>
+    </div>
+  </section>
+
+  <!-- EQUIPE -->
+  <section id="equipe">
+    <div class="section-label">Équipe</div>
+    <h2>Auteurs</h2>
+    <p>Programme GCDSTE — Génie Cybersécurité et Systèmes de Télécommunication Embarqués · Université Cadi Ayyad, ENSA Marrakech</p>
+    <div class="team-grid">
+      <div class="team-card">
+        <div class="team-avatar">ED</div>
+        <h3>Etienne Didier Dansou</h3>
+        <p>ENSA Marrakech</p>
+      </div>
+      <div class="team-card">
+        <div class="team-avatar">AD</div>
+        <h3>Ali Darkaoui</h3>
+        <p>ENSA Marrakech</p>
+      </div>
+      <div class="team-card">
+        <div class="team-avatar">SB</div>
+        <h3>Salah Eddine Bouaanane</h3>
+        <p>ENSA Marrakech</p>
+      </div>
+      <div class="team-card">
+        <div class="team-avatar">YL</div>
+        <h3>Yao Landry Dossah</h3>
+        <p>ENSA Marrakech</p>
+      </div>
+    </div>
+    <p style="margin-top: 1.5rem; font-size: 0.82rem;">
+      Encadré par <strong>Pr. Mohamed Lachgar</strong> · Support académique : <strong>Pr. Omar Achbarou</strong>, responsable du programme GCDSTE.
+    </p>
+  </section>
+
+</div>
+
+<footer>
+  <p>Threat Modeling Assistant · v1.0.0 · Licence MIT ·
+    <a href="https://github.com/Eti-Hack/Threat_Modeling_Assistant" target="_blank">GitHub</a>
+  </p>
+  <p style="margin-top:4px; opacity:0.5">ENSA Marrakech — Université Cadi Ayyad · 2025</p>
+</footer>
+
+<script>
+  function toggleTheme() {
+    const html = document.documentElement;
+    const btn = document.getElementById('themeBtn');
+    const isDark = html.getAttribute('data-theme') === 'dark';
+    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    btn.textContent = isDark ? '☾ Sombre' : '☀ Clair';
+    localStorage.setItem('tma-theme', isDark ? 'light' : 'dark');
+  }
+
+  // Restaurer le thème sauvegardé
+  const saved = localStorage.getItem('tma-theme');
+  if (saved) {
+    document.documentElement.setAttribute('data-theme', saved);
+    if (saved === 'dark') document.getElementById('themeBtn').textContent = '☀ Clair';
+  }
+</script>
+
+</body>
+</html>
